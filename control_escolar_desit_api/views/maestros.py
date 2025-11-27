@@ -9,6 +9,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.contrib.auth.models import Group
 import json
+from django.shortcuts import get_object_or_404
 
 class MaestrosAll(generics.CreateAPIView):
     #Esta función es esencial para todo donde se requiera autorización de inicio de sesión (token)
@@ -26,9 +27,17 @@ class MaestrosAll(generics.CreateAPIView):
         return Response(lista, 200)
     
 class MaestrosView(generics.CreateAPIView):
+
+    def get(self, request, *args, **kwargs):
+        maestro = get_object_or_404(Maestros, id = request.GET.get("id"))
+        maestro = MaestroSerializer(maestro, many=False).data
+        # Si todo es correcto, regresamos la información
+        return Response(maestro, 200)
+     
     #Registrar nuevo usuario maestro
     @transaction.atomic
     def post(self, request, *args, **kwargs):
+        print(request.data)
         user = UserSerializer(data=request.data)
         if user.is_valid():
             role = request.data['rol']
@@ -63,3 +72,35 @@ class MaestrosView(generics.CreateAPIView):
             maestro.save()
             return Response({"maestro_created_id": maestro.id }, 201)
         return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Actualizar datos del administrador
+    @transaction.atomic
+    def put(self, request, *args, **kwargs):
+        #permission_classes = (permissions.IsAuthenticated,)
+        # Primero obtenemos el administrador a actualizar
+        maestro = get_object_or_404(Maestros, id=request.data["id"])
+        maestro.id_trabajador = request.data["id_trabajador"]
+        maestro.fecha_nacimiento = request.data["fecha_nacimiento"]
+        maestro.telefono = request.data["telefono"]
+        maestro.rfc = request.data["rfc"]
+        maestro.cubiculo = request.data["cubiculo"]
+        maestro.edad = request.data["edad"]
+        maestro.area_investigacion = request.data["area_investigacion"]
+        maestro.materias_json = json.dumps(request.data["materias_json"])
+        maestro.save()
+        # Actualizamos los datos del usuario asociado (tabla auth_user de Django)
+        user = maestro.user
+        user.first_name = request.data["first_name"]
+        user.last_name = request.data["last_name"]
+        user.save()
+        
+        return Response({"message": "Administrador actualizado correctamente", "admin": AdminSerializer(maestro).data}, 200)
+        # return Response(user,200)
+        
+        #Eliminar administrador
+    def delete(self, request, *args, **kwargs):
+        admin = get_object_or_404(Maestros, id=request.GET.get("id"))
+        try:
+            admin.user.delete()
+            return Response({"details":"Maestro eliminado"},200)
+        except Exception as e:
+            return Response({"details":"Algo pasó al eliminar"},400)

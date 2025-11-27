@@ -8,6 +8,7 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.response import Response
 from django.contrib.auth.models import Group
+from django.shortcuts import get_object_or_404
 
 class AlumnosAll(generics.CreateAPIView):
     #Verificar si el usuario esta autenticado
@@ -20,6 +21,13 @@ class AlumnosAll(generics.CreateAPIView):
     
 class AlumnosView(generics.CreateAPIView):
     #Registrar nuevo usuario
+    def get(self, request, *args, **kwargs):
+        alumno = get_object_or_404(Alumnos, id = request.GET.get("id"))
+        alumno = AlumnoSerializer(alumno, many=False).data
+        print(alumno)
+        # Si todo es correcto, regresamos la información
+        return Response(alumno, 200)
+
     @transaction.atomic
     def post(self, request, *args, **kwargs):
 
@@ -66,3 +74,33 @@ class AlumnosView(generics.CreateAPIView):
             return Response({"Alumno creado con ID: ": alumno.id }, 201)
 
         return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Actualizar datos del administrador
+    @transaction.atomic
+    def put(self, request, *args, **kwargs):
+        #permission_classes = (permissions.IsAuthenticated,)
+        # Primero obtenemos el administrador a actualizar
+        alumno = get_object_or_404(Alumnos, id=request.data["id"])
+        alumno.matricula = request.data["matricula"]
+        alumno.curp = request.data["curp"]
+        alumno.rfc = request.data["rfc"]
+        alumno.fecha_nacimiento = request.data["fecha_nacimiento"]
+        alumno.edad = request.data["edad"]
+        alumno.telefono = request.data["telefono"]
+        alumno.ocupacion = request.data["ocupacion"]
+        alumno.save()
+        # Actualizamos los datos del usuario asociado (tabla auth_user de Django)
+        user = alumno.user
+        user.first_name = request.data["first_name"]
+        user.last_name = request.data["last_name"]
+        user.save()
+        
+        return Response({"message": "Administrador actualizado correctamente", "alumno": AdminSerializer(alumno).data}, 200)
+        # return Response(user,200)
+        
+    def delete(self, request, *args, **kwargs):
+        alumno = get_object_or_404(Alumnos, id=request.GET.get("id"))
+        try:
+            alumno.user.delete()
+            return Response({"details":"Alumno eliminado"},200)
+        except Exception as e:
+            return Response({"details":"Algo pasó al eliminar"},400)

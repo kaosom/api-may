@@ -19,9 +19,29 @@ class AdminAll(generics.CreateAPIView):
         lista = AdminSerializer(admin, many=True).data
         return Response(lista, 200)
 
+class TotalUsuarios(generics.CreateAPIView):
+    #Esta función es esencial para todo donde se requiera autorización de inicio de sesión (token)
+    permission_classes = (permissions.IsAuthenticated,)
+    # Invocamos la petición GET para obtener el total de usuarios por rol
+    def get(self, request, *args, **kwargs):
+        total_administradores = Administradores.objects.filter(user__is_active = 1).count()
+        total_maestros = Maestros.objects.filter(user__is_active = 1).count()
+        total_alumnos = Alumnos.objects.filter(user__is_active = 1).count()
+        return Response({
+            "administradores": total_administradores,
+            "maestros": total_maestros,
+            "alumnos": total_alumnos
+        }, 200)
+
 class AdminView(generics.CreateAPIView):
     #Obtener usuario por ID
-    permission_classes = (permissions.IsAuthenticated,)
+    #permission_classes = (permissions.IsAuthenticated,)
+    
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+    
     def get(self, request, *args, **kwargs):
         admin = get_object_or_404(Administradores, id = request.GET.get("id"))
         admin = AdminSerializer(admin, many=False).data
@@ -78,7 +98,7 @@ class AdminView(generics.CreateAPIView):
     # Actualizar datos del administrador
     @transaction.atomic
     def put(self, request, *args, **kwargs):
-        permission_classes = (permissions.IsAuthenticated,)
+        #permission_classes = (permissions.IsAuthenticated,)
         # Primero obtenemos el administrador a actualizar
         admin = get_object_or_404(Administradores, id=request.data["id"])
         admin.clave_admin = request.data["clave_admin"]
@@ -95,3 +115,12 @@ class AdminView(generics.CreateAPIView):
         
         return Response({"message": "Administrador actualizado correctamente", "admin": AdminSerializer(admin).data}, 200)
         # return Response(user,200)
+        
+        #Eliminar administrador
+    def delete(self, request, *args, **kwargs):
+        admin = get_object_or_404(Administradores, id=request.GET.get("id"))
+        try:
+            admin.user.delete()
+            return Response({"details":"Administrador eliminado"},200)
+        except Exception as e:
+            return Response({"details":"Algo pasó al eliminar"},400)
