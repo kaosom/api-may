@@ -56,11 +56,24 @@ class AdminView(generics.CreateAPIView):
         
         if user.is_valid():
             #Grabar datos del administrador
-            role = request.data['rol']
-            first_name = request.data['first_name']
-            last_name = request.data['last_name']
-            email = request.data['email']
-            password = request.data['password']
+            role = request.data.get('rol', 'administrador')
+            first_name = request.data.get('first_name', '')
+            last_name = request.data.get('last_name', '')
+            email = request.data.get('email', '')
+            password = request.data.get('password', '')
+            
+            # Validar que los campos requeridos estén presentes
+            if not email or not password or not first_name or not last_name:
+                return Response({
+                    "message": "Faltan campos requeridos",
+                    "errors": {
+                        "email": "Este campo es requerido" if not email else None,
+                        "password": "Este campo es requerido" if not password else None,
+                        "first_name": "Este campo es requerido" if not first_name else None,
+                        "last_name": "Este campo es requerido" if not last_name else None,
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
             #Valida si existe el usuario o bien el email registrado
             existing_user = User.objects.filter(email=email).first()
 
@@ -83,17 +96,26 @@ class AdminView(generics.CreateAPIView):
             group.save()
 
             #Almacenar los datos adicionales del administrador
+            edad_value = request.data.get("edad")
+            if edad_value:
+                try:
+                    edad_value = int(edad_value) if isinstance(edad_value, str) else edad_value
+                except (ValueError, TypeError):
+                    edad_value = None
+            else:
+                edad_value = None
+                
             admin = Administradores.objects.create(user=user,
-                                            clave_admin= request.data["clave_admin"],
-                                            telefono= request.data["telefono"],
-                                            rfc= request.data["rfc"].upper(),
-                                            edad= request.data["edad"],
-                                            ocupacion= request.data["ocupacion"])
+                                            clave_admin= request.data.get("clave_admin", ""),
+                                            telefono= request.data.get("telefono", ""),
+                                            rfc= request.data.get("rfc", "").upper() if request.data.get("rfc") else "",
+                                            edad= edad_value,
+                                            ocupacion= request.data.get("ocupacion", ""))
             admin.save()
 
             return Response({"Admin creado con el ID: ": admin.id }, 201)
 
-        return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Error de validación", "errors": user.errors}, status=status.HTTP_400_BAD_REQUEST)
     
     # Actualizar datos del administrador
     @transaction.atomic
