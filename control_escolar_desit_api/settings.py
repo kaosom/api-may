@@ -81,7 +81,7 @@ if 'DATABASE_URL' in os.environ:
     DATABASES = {
         'default': dj_database_url.parse(os.environ['DATABASE_URL'])
     }
-else:
+elif os.path.exists(os.path.join(BASE_DIR, "my.cnf")):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -89,6 +89,13 @@ else:
                 'read_default_file': os.path.join(BASE_DIR, "my.cnf"),
                 'charset': 'utf8mb4',
             }
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
