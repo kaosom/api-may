@@ -36,6 +36,8 @@ class TotalUsuarios(generics.CreateAPIView):
 class AdminView(generics.CreateAPIView):
     #Obtener usuario por ID
     #permission_classes = (permissions.IsAuthenticated,)
+    # Desactivar autenticación de sesión para evitar CSRF en endpoints públicos
+    authentication_classes = []
     
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -51,10 +53,16 @@ class AdminView(generics.CreateAPIView):
     #Registrar nuevo usuario
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        # Serializamos los datos del administrador para volverlo de nuevo JSON
-        user = UserSerializer(data=request.data)
-        
-        if user.is_valid():
+        try:
+            # Serializamos los datos del administrador para volverlo de nuevo JSON
+            user = UserSerializer(data=request.data)
+            
+            if not user.is_valid():
+                return Response({
+                    "message": "Error de validación", 
+                    "errors": user.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
             #Grabar datos del administrador
             role = request.data.get('rol', 'administrador')
             first_name = request.data.get('first_name', '')
@@ -78,14 +86,15 @@ class AdminView(generics.CreateAPIView):
             existing_user = User.objects.filter(email=email).first()
 
             if existing_user:
-                return Response({"message":"Username "+email+", is already taken"},400)
+                return Response({
+                    "message": "Username "+email+", is already taken"
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             user = User.objects.create( username = email,
                                         email = email,
                                         first_name = first_name,
                                         last_name = last_name,
                                         is_active = 1)
-
 
             user.save()
             user.set_password(password)
@@ -113,9 +122,13 @@ class AdminView(generics.CreateAPIView):
                                             ocupacion= request.data.get("ocupacion", ""))
             admin.save()
 
-            return Response({"Admin creado con el ID: ": admin.id }, 201)
-
-        return Response({"message": "Error de validación", "errors": user.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"Admin creado con el ID: ": admin.id }, status=status.HTTP_201_CREATED)
+        
+        except Exception as e:
+            return Response({
+                "message": "Error al crear administrador",
+                "error": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     # Actualizar datos del administrador
     @transaction.atomic

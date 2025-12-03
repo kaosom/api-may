@@ -7,7 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
-    password = serializers.CharField(write_only=True, required=False)
+    password = serializers.CharField(write_only=True, required=True, min_length=6)
     rol = serializers.CharField(required=False, write_only=True)
     clave_admin = serializers.CharField(required=False, write_only=True, allow_blank=True)
     telefono = serializers.CharField(required=False, write_only=True, allow_blank=True)
