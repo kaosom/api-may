@@ -81,6 +81,13 @@ if 'DATABASE_URL' in os.environ:
     DATABASES = {
         'default': dj_database_url.parse(os.environ['DATABASE_URL'])
     }
+elif os.environ.get('USE_SQLITE_FOR_BUILD', 'False') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 elif os.path.exists(os.path.join(BASE_DIR, "my.cnf")):
     DATABASES = {
         'default': {

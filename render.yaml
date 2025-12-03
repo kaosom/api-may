@@ -2,7 +2,7 @@ services:
   - type: web
     name: control-escolar-api
     env: python
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    buildCommand: pip install -r requirements.txt && USE_SQLITE_FOR_BUILD=True python manage.py collectstatic --noinput --skip-checks
     startCommand: ./start.sh
     envVars:
       - key: PYTHON_VERSION
