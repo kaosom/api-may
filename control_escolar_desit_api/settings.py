@@ -38,7 +38,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = os.environ.get(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:4200'
+    'http://localhost:4200,https://lavender-cat-827556.hostingersite.com'
 ).split(',')
 
 if DEBUG:
