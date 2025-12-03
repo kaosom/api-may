@@ -8,7 +8,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', '-_&+lsebec(whhw!%n@ww&1j=4-^j_if9x8$q
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Para Railway, incluye *.railway.app por defecto si no se especifica ALLOWED_HOSTS
+default_hosts = 'localhost,127.0.0.1,*.railway.app'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', default_hosts).split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
