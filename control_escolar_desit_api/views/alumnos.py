@@ -21,6 +21,9 @@ class AlumnosAll(generics.CreateAPIView):
     
 class AlumnosView(generics.CreateAPIView):
     #Registrar nuevo usuario
+    # Desactivar autenticación de sesión para evitar CSRF en endpoints públicos
+    authentication_classes = []
+    
     def get(self, request, *args, **kwargs):
         alumno = get_object_or_404(Alumnos, id = request.GET.get("id"))
         alumno = AlumnoSerializer(alumno, many=False).data

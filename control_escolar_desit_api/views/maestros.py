@@ -27,6 +27,8 @@ class MaestrosAll(generics.CreateAPIView):
         return Response(lista, 200)
     
 class MaestrosView(generics.CreateAPIView):
+    # Desactivar autenticación de sesión para evitar CSRF en endpoints públicos
+    authentication_classes = []
 
     def get(self, request, *args, **kwargs):
         maestro = get_object_or_404(Maestros, id = request.GET.get("id"))
