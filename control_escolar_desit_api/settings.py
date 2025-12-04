@@ -8,8 +8,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', '-_&+lsebec(whhw!%n@ww&1j=4-^j_if9x8$q
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# Para Railway, incluye *.railway.app por defecto si no se especifica ALLOWED_HOSTS
-default_hosts = 'localhost,127.0.0.1,*.railway.app'
+# Para Railway y Render, incluye *.railway.app y *.onrender.com por defecto si no se especifica ALLOWED_HOSTS
+default_hosts = 'localhost,127.0.0.1,*.railway.app,*.onrender.com'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', default_hosts).split(',')
 
 INSTALLED_APPS = [
@@ -79,18 +79,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'control_escolar_desit_api.wsgi.application'
 
+# Prioridad: DATABASE_URL > USE_SQLITE_FOR_BUILD > my.cnf (MySQL local) > SQLite por defecto
 if 'DATABASE_URL' in os.environ:
+    # Railway y otros servicios cloud proporcionan DATABASE_URL automáticamente
     DATABASES = {
-        'default': dj_database_url.parse(os.environ['DATABASE_URL'])
+        'default': dj_database_url.parse(os.environ['DATABASE_URL'], conn_max_age=600)
     }
+    print(f"✅ Usando base de datos desde DATABASE_URL: {os.environ['DATABASE_URL'][:50]}...")
 elif os.environ.get('USE_SQLITE_FOR_BUILD', 'False') == 'True':
+    # Para builds que no necesitan base de datos real
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+    print("✅ Usando SQLite para build")
 elif os.path.exists(os.path.join(BASE_DIR, "my.cnf")):
+    # MySQL local (solo para desarrollo local)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -100,13 +106,16 @@ elif os.path.exists(os.path.join(BASE_DIR, "my.cnf")):
             }
         }
     }
+    print("✅ Usando MySQL local desde my.cnf")
 else:
+    # SQLite por defecto (solo para desarrollo)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+    print("✅ Usando SQLite por defecto")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
